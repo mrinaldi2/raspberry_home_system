@@ -21,6 +21,7 @@ Rasberry Home System is plugin based. Plugins can be added in the plugin folder.
        "data": {
         
        }
+    }
  ]
 
 }
