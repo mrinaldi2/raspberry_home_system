@@ -1,0 +1,349 @@
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <assert.h>
+
+#include <SDL.h>
+#include <SDL_ttf.h>
+#include <version_config.h>
+
+#include "src/LTexture.h"
+
+using namespace std;
+
+int A = 65;
+int Z = 90;
+
+int a = 97;
+int z = 122;
+
+bool success = true;
+
+SDL_Window *gWindow = NULL;
+
+SDL_Renderer *gRenderer;
+
+TTF_Font* gFont = NULL;
+
+char specials[5] = {',', ' ', '.', '?', '!'};
+char encr_specials[5] = {'*', ':', '@', '%', '#'};
+
+size_t specials_size = sizeof(specials) / sizeof(char);
+char *specials_end = specials + specials_size;
+
+size_t encr_specials_size = sizeof(encr_specials) / sizeof(char);
+char *encr_specials_end = encr_specials + encr_specials_size;
+
+int find(const char c, const char* array) {
+    for(int i = 0; i < sizeof(array) / sizeof(char); i++) {
+        if(c == array[i]) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+typedef struct {
+    SDL_Rect draw_rect;    // dimensions of button
+    struct {
+        Uint8 r, g, b, a;
+    } colour;
+    string btn_text;
+    bool pressed;
+} button_t;
+
+bool button(SDL_Renderer *r, TTF_Font *f, button_t *btn) {
+    // draw button
+    SDL_SetRenderDrawColor(r, btn->colour.r, btn->colour.g, btn->colour.b, btn->colour.a);
+    SDL_RenderFillRect(r, &btn->draw_rect);
+
+    LTexture btnTexture;
+    //int *w, *h;
+    //btnTexture.queryText(w, h);
+    btnTexture.loadFromRenderedText(r, f, btn->btn_text.c_str(), {0,0,0} );
+    btnTexture.render(r, btn->draw_rect.x + ((btn->draw_rect.w / 2) - (100)), btn->draw_rect.y);
+
+
+    // if button press detected - reset it so it wouldn't trigger twice
+    if(btn->pressed) {
+        btn->pressed = false;
+        return true;
+    }
+    return false;
+}
+
+button_t decrypt_button = {
+        .draw_rect = { .x = 128, .y = 128, .w = 100, .h = 38 },
+        .colour = { .r = 255, .g = 255, .b = 255, .a = 255, },
+        .btn_text = "Decrypt!"
+};
+
+string encrypt(string text, int step) {
+    stringstream encryptedString;
+    for(char& c : text) {
+        int index = find(c, specials);
+        if (index != -1) {
+            encryptedString << encr_specials[index];
+        } else {
+            if (isupper(c)) {
+                encryptedString << char(A + (((int(c) + step) - A) % (Z+1 - A)));
+            } else {
+                encryptedString << char(a + (((int(c) + step) - a) % (z+1 - a)));
+            }
+        }
+    }
+    return encryptedString.str();
+}
+
+string decrypt(string text, int step) {
+    stringstream decryptedString;
+    for(char& c : text) {
+        int index = find(c, encr_specials);
+        if (index != -1) {
+            decryptedString << specials[index];
+        } else {
+            if (isupper(c)) {
+                decryptedString << char(A + (((int(c) + step) - A) % (Z+1 - A)));
+            } else {
+                decryptedString << char(a + (((int(c) + step) - a) % (z+1 - a)));
+            }
+        }
+    }
+    return decryptedString.str();
+}
+
+bool init_font() {
+    success = true;
+    if( TTF_Init() == -1 )
+    {
+        printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
+        success = false;
+    }
+
+    //Loading success flag
+    bool success = true;
+
+    //Open the font
+    gFont = TTF_OpenFont( "fonts/lazy.ttf", 16 );
+    if( gFont == NULL )
+    {
+        printf( "Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError() );
+        success = false;
+    }
+
+    return success;
+}
+
+bool init() {
+    success = true;
+    if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+    {
+        printf( "SDL could not initialize! SDL_Error: %s\n", SDL_GetError() );
+        success = false;
+    } else {
+        //Create window
+        gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 480,
+                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+
+        if( FULL_SCREEN_AVAILABLE == 1 ) {
+            SDL_SetWindowFullscreen(gWindow, SDL_WINDOW_FULLSCREEN);
+        }
+
+
+        if (gWindow == NULL) {
+            printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+            success = false;
+        } else {
+
+            gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+            if( gRenderer == NULL ) {
+               printf( "Renderer could not be created! SDL_Error: %s\n", SDL_GetError() );
+               success = false;
+            } else {
+               SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+            }
+
+        }
+
+        success = init_font();
+    }
+
+    return success;
+}
+
+void close()
+{
+    //Free global font
+    TTF_CloseFont( gFont );
+    gFont = NULL;
+
+    SDL_DestroyRenderer( gRenderer );
+
+    //Destroy window
+    SDL_DestroyWindow( gWindow );
+    gWindow = NULL;
+
+    //Quit SDL subsystems
+    SDL_Quit();
+}
+
+string inputText = "0";
+string encryptedText = "0";
+string decryptedText = "0";
+bool renderText = true;
+bool encryptNow = false;
+
+void button_process_event(button_t *btn, const SDL_Event *ev) {
+    // react on mouse click within button rectangle by setting 'pressed'
+    if(ev->type == SDL_MOUSEBUTTONDOWN) {
+        if(ev->button.button == SDL_BUTTON_LEFT &&
+           ev->button.x >= btn->draw_rect.x &&
+           ev->button.x <= (btn->draw_rect.x + btn->draw_rect.w) &&
+           ev->button.y >= btn->draw_rect.y &&
+           ev->button.y <= (btn->draw_rect.y + btn->draw_rect.h)) {
+            btn->pressed = true;
+        }
+    }
+}
+
+void run() {
+
+    LTexture gTextTexture;
+
+    LTexture gPromptTextTexture;
+    LTexture gInputTextTexture;
+    LTexture gDecryptText;
+    LTexture gLightBox;
+    gPromptTextTexture.loadFromRenderedText(gRenderer, gFont ,"Enter text to encrypt:", {255,255,255} );
+
+    //Rerender text if needed
+    if( renderText )
+    {
+        //Text is not empty
+        if( inputText != "" )
+        {
+            //Render new text
+            gInputTextTexture.loadFromRenderedText(gRenderer, gFont, inputText.c_str(), {255,255,255} );
+        }
+            //Text is empty
+        else
+        {
+            //Render space texture
+            gInputTextTexture.loadFromRenderedText(gRenderer, gFont, " ", {255,255,255} );
+        }
+
+        gPromptTextTexture.render(gRenderer, ( 800 - gPromptTextTexture.getWidth() ) / 2, 0);
+        gInputTextTexture.render(gRenderer, ( 800 - gInputTextTexture.getWidth() ) / 2, gPromptTextTexture.getHeight());
+
+    }
+
+    if (encryptNow) {
+        encryptedText = encrypt(inputText, 19);
+        inputText = "";
+        encryptNow = false;
+    }
+    gTextTexture.loadFromRenderedText(gRenderer, gFont ,encryptedText, {255,255,255} );
+    gTextTexture.render(gRenderer, 10, 30);
+
+    if(button(gRenderer, gFont, &decrypt_button)) {
+        decryptedText = decrypt(encryptedText, 26 - 19);
+    }
+    gDecryptText.loadFromRenderedText(gRenderer, gFont ,decryptedText, {255,255,255} );
+    gDecryptText.render(gRenderer, 10, 50);
+
+    gLightBox.loadFromFile(gRenderer, "images/light_box.png");
+    gLightBox.render(gRenderer, 100,100);
+
+    //
+    //assert(text == decryptedText);
+}
+
+int loop() {
+    //Main loop flag
+    bool quit = false;
+
+    //Event handler
+    SDL_Event e;
+
+    SDL_StartTextInput();
+    while(!quit) {
+        //Handle events on queue
+        while( SDL_PollEvent( &e ) != 0 )
+        {
+            //User requests quit
+            if( e.type == SDL_QUIT )
+            {
+                quit = true;
+            }
+
+            else if( e.type == SDL_KEYDOWN ) {
+                //Handle backspace
+                if( e.key.keysym.sym == SDLK_BACKSPACE && inputText.length() > 0 )
+                {
+                    //lop off character
+                    inputText.pop_back();
+                    renderText = true;
+                }
+                    //Handle copy
+                else if( e.key.keysym.sym == SDLK_c && SDL_GetModState() & KMOD_CTRL )
+                {
+                    SDL_SetClipboardText( inputText.c_str() );
+                }
+                    //Handle paste
+                else if( e.key.keysym.sym == SDLK_v && SDL_GetModState() & KMOD_CTRL )
+                {
+                    inputText = SDL_GetClipboardText();
+                    renderText = true;
+                }
+
+                else if( e.key.keysym.sym == SDLK_RETURN)
+                {
+                    encryptNow = true;
+                }
+            }
+
+            else if( e.type == SDL_TEXTINPUT )
+            {
+                //Not copy or pasting
+                if( !( SDL_GetModState() & KMOD_CTRL && ( e.text.text[ 0 ] == 'c' || e.text.text[ 0 ] == 'C' || e.text.text[ 0 ] == 'v' || e.text.text[ 0 ] == 'V' ) ) )
+                {
+                    //Append character
+                    inputText += e.text.text;
+                    cout << " will insert text " << inputText << endl;
+                    renderText = true;
+                }
+            }
+
+            button_process_event(&decrypt_button, &e);
+        }
+
+        SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_RenderClear(gRenderer);
+
+        run();
+        SDL_RenderPresent(gRenderer);
+
+    }
+
+    SDL_StopTextInput();
+
+    return 0;
+}
+
+int main() {
+
+    //Start up SDL and create window
+    if( !init() )
+    {
+        printf( "Failed to initialize!\n" );
+    }
+    else
+    {
+        loop();
+    }
+
+    close();
+    return 0;
+}

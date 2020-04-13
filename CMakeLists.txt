@@ -19,3 +19,9 @@ SET(CPACK_GENERATOR "ZIP")
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Manuel Rinaldi") #required
 
 INCLUDE(CPack)
+
+
+if (${BUILDING_TESTS})
+    INCLUDE(CTest)
+    add_subdirectory(tests)
+endif()
