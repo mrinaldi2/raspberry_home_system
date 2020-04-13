@@ -1,0 +1,2 @@
+add_subdirectory(base_plugin)
+add_subdirectory(plugin_light)
