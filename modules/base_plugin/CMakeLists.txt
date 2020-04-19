@@ -1,7 +1,7 @@
 
 find_package(Boost REQUIRED)
 
-add_library(base_plugin src/PluginFactory.cpp)
+add_library(base_plugin "src/PluginBase.cpp")
 
 include_directories(base_plugin ${Boost_INCLUDE_DIRS})
 

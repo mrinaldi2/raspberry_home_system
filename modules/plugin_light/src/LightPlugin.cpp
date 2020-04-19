@@ -6,14 +6,18 @@
 #include <iostream>
 using namespace std;
 
-LightPlugin::LightPlugin() {
+RazHomePlugins::LightPlugin::LightPlugin() {
 
 }
 
-LightPlugin::~LightPlugin() {
+RazHomePlugins::LightPlugin::~LightPlugin() {
 
 }
 
-void LightPlugin::display() const {
+void RazHomePlugins::LightPlugin::render() {
     cout << "Displayed on monitor" << endl;
+}
+
+void RazHomePlugins::LightPlugin::parseKey() {
+    cout << "Parsed keys" << endl;
 }

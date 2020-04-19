@@ -1,15 +1,9 @@
 
-find_package(Boost REQUIRED COMPONENTS filesystem)
-project(core VERSION 0.0.1)
-add_library(core)
 
-set(MY_INSTALL_RPATH
-        "@loader_path"
-        )
-set_target_properties(core
-        PROPERTIES
-        INSTALL_RPATH "${MY_INSTALL_RPATH}"
-        )
+project(core VERSION 0.0.1)
+add_library(core 
+                src/RazHome/RazCore.cpp
+                src/RazHome/PluginLoader.cpp)
 
 include_directories(core ${Boost_INCLUDE_DIRS})
 
@@ -23,15 +17,8 @@ target_include_directories(core
         src/RazHome/PluginLoader.cpp
         )
 
-target_sources(core
-                PRIVATE
-                 src/RazHome/RazCore.cpp
-                 src/RazHome/PluginLoader.cpp
-            )
-
-
 install(TARGETS core
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
 
-target_link_libraries(core base_plugin ${Boost_LIBRARIES})
+target_link_libraries(core base_plugin YamlParser ${Boost_LIBRARIES})

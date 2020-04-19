@@ -1,7 +1,11 @@
-cmake_minimum_required(VERSION 3.13.4)
+cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_LINK_FLAGS "-Wl,--no-as-needed -ldl") 
+set(CMAKE_INSTALL_RPATH "./../lib")
 project(RaspberryHome VERSION 1.0.0)
+
+include(CppLint.cmake)
 
 SET(FULL_SCREEN_AVAILABLE 0 CACHE STRING "Should open window fullscreen")
 SET(IS_DEBUG 1 CACHE STRING "Should application use debug")
@@ -15,7 +19,11 @@ add_subdirectory(libraries)
 add_subdirectory(modules)
 add_subdirectory(application)
 
-SET(CPACK_GENERATOR "ZIP")
+SET(CMAKE_DEBUG_POSTFIX "-d")
+SET(CPACK_INSTALL_CMAKE_PROJECTS
+    "debug;RaspberryHome;ALL;/"
+    "release;RaspberryHome;ALL;/"
+)
 SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Manuel Rinaldi") #required
 
 INCLUDE(CPack)
@@ -25,3 +33,4 @@ if (${BUILDING_TESTS})
     INCLUDE(CTest)
     add_subdirectory(tests)
 endif()
+

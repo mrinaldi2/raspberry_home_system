@@ -4,6 +4,8 @@
 
 #include "PluginLoader.h"
 #include <iostream>
+#include <boost/dll/import.hpp> 
+#include <boost/function.hpp>
 using namespace std;
 
 RazHome::PluginLoader::PluginLoader() {}
@@ -11,7 +13,7 @@ RazHome::PluginLoader::PluginLoader() {}
 RazHome::PluginLoader::~PluginLoader() {}
 
 RazHome::Library RazHome::PluginLoader::loadPlugin(const string name, const string path) {
-    dll::fs::path lib_path(path);
+    boost::filesystem::path lib_path(path);
     boost::shared_ptr<PluginBase> plugin;
     cout << "Loading the plugin" << endl;
 

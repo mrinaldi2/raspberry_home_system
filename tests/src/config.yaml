@@ -1,0 +1,6 @@
+plugins:
+  temperature:
+    x: 0
+    y: 0
+    name: "temperature"
+    lib: "libTemperature.so"

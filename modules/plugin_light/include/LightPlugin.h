@@ -8,15 +8,18 @@
 #include <boost/config.hpp>
 #include "PluginBase.h"
 
-class BOOST_SYMBOL_EXPORT LightPlugin : PluginBase {
+namespace RazHomePlugins {
+        class BOOST_SYMBOL_EXPORT LightPlugin : public PluginBase {
         public:
         LightPlugin();
         ~LightPlugin();
-        void display() const;
+        void parseKey();
+        void render();
 };
 
-extern "C" BOOST_SYMBOL_EXPORT LightPlugin plugin;
-LightPlugin plugin;
+extern "C" BOOST_SYMBOL_EXPORT RazHomePlugins::LightPlugin plugin;
+RazHomePlugins::LightPlugin plugin;
 
 
 #endif //RASPBERRY_HOME_SYSTEM_LIGHTPLUGIN_H
+}

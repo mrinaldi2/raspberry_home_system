@@ -1,5 +1,6 @@
 
-add_library(plugin_light)
+add_library(plugin_light
+                src/LightPlugin.cpp)
 
 find_package(Boost REQUIRED)
 include_directories(plugin_light ${Boost_INCLUDE_DIRS})
@@ -12,10 +13,6 @@ target_include_directories(plugin_light
         src/LightPlugin.cpp
         )
 
-target_sources(plugin_light
-        PRIVATE
-        src/LightPlugin.cpp
-        )
 
 target_link_libraries(plugin_light base_plugin)
 

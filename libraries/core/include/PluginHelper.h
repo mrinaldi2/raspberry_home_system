@@ -5,11 +5,14 @@
 #ifndef RASPBERRYHOME_PLUGINHELPER_H
 #define RASPBERRYHOME_PLUGINHELPER_H
 
+#include "PluginBase.h"
+using namespace RazHomePlugins;
+
 namespace RazHome {
     struct Library {
         string name;
         boost::shared_ptr<PluginBase> plugin;
-        bool isLoaded
+        bool isLoaded;
     };
 }
 
